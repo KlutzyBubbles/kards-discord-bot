@@ -1,0 +1,14 @@
+{
+    "en": {
+        "error": "Something went wrong, please try again later",
+        "wip": "This feature isnt available yet!",
+        "arguments_incorrect": "Incorrect amount of arguments",
+        "invalid_language": "Invalid language supplied, valid languages: ",
+        "invalid_page_size": "Invalid page size supplied, valid page sizes: ",
+        "setting_changed": "Setting has been changed",
+        "invalid_action": "Invalid action, use add or remove",
+        "fixed": "Channels setting fixed",
+        "no_fix": "No channels to fix",
+        "no_results": "No results"
+    }
+}

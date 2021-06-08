@@ -1,0 +1,30 @@
+{
+  "name": "gherkin-bot",
+  "version": "0.0.1",
+  "description": "Gherkin of a discord bot",
+  "private": true,
+  "author": "KlutzyBubbles",
+  "main": "master.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KlutzyBubbles/GherkinBot.git"
+  },
+  "scripts": {
+    "start": "pm2 start ./kards-bot.js --name KardsBot",
+    "stop": "pm2 stop KardsBot",
+    "debug": "env-cmd node --expose-gc --inspect ./kards-bot.js"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.3.19",
+    "cross-fetch": "^3.1.4",
+    "discord.js": "^12.5.3",
+    "graphql": "^15.5.0",
+    "log4js": "^6.3.0",
+    "mongoose": "^5.12.13",
+    "pm2": "^5.0.0",
+    "q": "^1.5.1"
+  },
+  "devDependencies": {
+    "env-cmd": "^10.1.0"
+  }
+}
