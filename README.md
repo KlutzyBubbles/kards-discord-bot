@@ -63,7 +63,7 @@ Sets the preferred language output, options are en, de, fr, pl, pt, ru, zh
 
 Sets the preferred page size for List Cards, options are 5, 10, 15
 
-**[[[channels (add|remove) (channels)***
+**[[[channels (add|remove) (channels)**
 
 Adds or removes channels in which the list and search commands can be used. If no channels are added thn it is usable in all channels.
 
