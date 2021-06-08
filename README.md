@@ -4,6 +4,8 @@
 
 [Invite Link](https://discord.com/oauth2/authorize?client_id=851402593598832640&scope=bot&permissions=52224)
 
+This bot is currently hosted on my private servers until i find a reasonably priced option, this means if i lose power, the bot goes down. Although the uptime of my servers for the past year has been ~98%.
+
 ## Self hosting
 
 Simply clone the repo, set the following environment variables
