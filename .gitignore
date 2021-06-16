@@ -9,3 +9,5 @@ Temp/*.json
 build/**
 
 .env
+
+invite
