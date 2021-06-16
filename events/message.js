@@ -8,6 +8,7 @@ const logger = log4js.getLogger('player-model');
 logger.level = process.env.log_level || 'error';
 
 const { SettingsFunctions } = require('../model/settings');
+const { NationFunctions } = require('../model/nation');
 
 const getString = require('../language/getString');
 
@@ -24,6 +25,31 @@ const languages = [
     'pt',
     'ru',
     'zh'
+];
+
+const sets = [
+    'Base',
+    'Allegiance',
+    'Breakthrough',
+    'Legions',
+    'TheatersOfWar'
+];
+
+const rarities = [
+    'Limited',
+    'Standard',
+    'Special',
+    'Elite'
+];
+
+const types = [
+    'infantry',
+    'artillery',
+    'tank',
+    'bomber',
+    'fighter',
+    'order',
+    'countermeasure'
 ];
 
 const pageSizes = [
@@ -43,6 +69,7 @@ query getCards(
     $type: [String]
     $rarity: [String]
     $set: [String]
+    $showSpawnables: Boolean
 ) {
     cards(
         language: $language
@@ -54,7 +81,7 @@ query getCards(
         type: $type
         set: $set
         rarity: $rarity
-        showSpawnables: false
+        showSpawnables: $showSpawnables
     ) {
         pageInfo {
             count
@@ -69,6 +96,15 @@ query getCards(
     }
 }
 `;
+
+function getCaseInsensative(name, list) {
+    for (var i = 0; i < list.length; i++) {
+        if (list[i].toLowerCase() == name.toLowerCase()) {
+            return list[i];
+        }
+    }
+    return undefined;
+}
 
 async function onMessage(message) {
     if (!message.content.startsWith('[')) return;
@@ -162,7 +198,6 @@ async function onMessage(message) {
                 return message.channel.send(getString(settings.language, 'arguments_incorrect'));
             }
             var action = split[1].toLowerCase();
-            var channel = split[2].toLowerCase();
             if (action == 'add') {
                 await message.mentions.channels.each(async (channel) => {
                     await SettingsFunctions.addChannel(message.guild.id, channel.id);
@@ -183,7 +218,134 @@ async function onMessage(message) {
         if (settings.channels.length > 0) {
             if (!settings.channels.includes(message.channel.id.toLowerCase())) return;
         }
-        message.channel.send(getString(settings.language, 'wip'));
+        var content = message.content.split('[[')[1];
+        var split = content.split(' ');
+        var variables = {
+            language: settings.language,
+            first: settings.page_size,
+            offset: 0
+        };
+        for (var i = 0; i < split.length; i++) {
+            var item = split[i].split('=');
+            if (item.length != 2) {
+                logger.debug('Error in item split');
+            } else {
+                var name = item[0];
+                if (name == 'nation') {
+                    var nations = item[1].split(',');
+                    var nations_query = [];
+                    for (var j = 0; j < nations.length; j++) {
+                        let nation_id;
+                        try {
+                            nation_id = await NationFunctions.nameToId(nations[j]);
+                        } catch(e) {
+                            logger.error(e);
+                        }
+                        if (nation_id) {
+                            nations_query.push(nation_id);
+                        }
+                    }
+                    if (nations_query.length > 0) {
+                        variables.nationIds = nations_query;
+                    }
+                } else if (name == 'page') {
+                    let page;
+                    try {
+                        page = parseInt(item[1]);
+                    } catch(e) {
+                        logger.error(e);
+                    }
+                    if (page) {
+                        if (page < 1) {
+                            page = 1;
+                        }
+                        variables.offset = (page - 1) * variables.first;
+                    }
+                } else if (name == 'kredits') {
+                    let kredits;
+                    try {
+                        kredits = parseInt(item[1]);
+                    } catch(e) {
+                        logger.error(e);
+                    }
+                    if (kredits) {
+                        if (kredits < 1) {
+                            kredits = 1;
+                        } else if (kredits > 7) {
+                            kredits = 7;
+                        }
+                        variables.kredits = kredits;
+                    }
+                } else if (name == 'set') {
+                    var sets_given = item[1].split(',');
+                    var sets_query = [];
+                    for (var j = 0; j < sets_given.length; j++) {
+                        var set = getCaseInsensative(sets_given[j], sets);
+                        if (set) {
+                            sets_query.push(set);
+                        }
+                    }
+                    if (sets_query.length > 0) {
+                        variables.set = sets_query;
+                    }
+                } else if (name == 'rarity') {
+                    var rarities_given = item[1].split(',');
+                    var rarity_query = [];
+                    for (var j = 0; j < rarities_given.length; j++) {
+                        var rarity = getCaseInsensative(rarities_given[j], sets);
+                        if (rarity) {
+                            rarity_query.push(rarity);
+                        }
+                    }
+                    if (rarity_query.length > 0) {
+                        variables.rarity = rarity_query;
+                    }
+                } else if (name == 'type') {
+                    var types_given = item[1].split(',');
+                    var type_query = [];
+                    for (var j = 0; j < types_given.length; j++) {
+                        var type = getCaseInsensative(types_given[j], sets);
+                        if (type) {
+                            type_query.push(type);
+                        }
+                    }
+                    if (type_query.length > 0) {
+                        variables.type = type_query;
+                    }
+                } else if (name == 'spawnable') {
+                    var spawnable = item[1].toLowerCase();
+                    var spawnable_query = false;
+                    if (spawnable == 'true' || spawnable == 'yes' || spawnable == 'y') {
+                        spawnable_query = true;
+                    }
+                    variables.showSpawnables = spawnable_query;
+                } else {
+                    logger.debug('No name found, name provided ' + name);
+                }
+            }
+        }
+        client.query({
+            query: cardsQuery,
+            variables: variables
+        }).then((result) => {
+            logger.trace(result);
+            if (result.data.cards.pageInfo.count == 0) {
+                message.channel.send(getString(settings.language, 'no_results'));
+            } else {
+                var files = [];
+                for (var i = 0; i < result.data.cards.edges.length; i++) {
+                    var card = result.data.cards.edges[i];
+                    files.push({
+                        attachment: 'https://kards.com' + card.node.image,
+                        name: card.node.json.title.en + '.png'
+                    })
+                }
+                message.channel.send({ content: JSON.stringify(variables), files: files });
+            }
+        }).catch((e) => {
+            logger.error(e);
+            message.channel.send(getString(settings.language, 'error'));
+        });
     } else {
         // Card search by name
         if (settings.channels.length > 0) {
@@ -200,7 +362,8 @@ async function onMessage(message) {
                 language: settings.language,
                 q: search,
                 first: 1,
-                offset: 0
+                offset: 0,
+                showSpawnables: true
             }
         }).then((result) => {
             logger.trace(result);
