@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Q = require('q');
 const log4js = require('log4js');
-const logger = log4js.getLogger('user-model');
+const logger = log4js.getLogger('model-nation');
 logger.level = process.env.log_level || 'error';
 
 const Schema = mongoose.Schema;
@@ -39,33 +39,15 @@ class NationFunctions {
 		return deferred.promise;
 	}
 
-	static getById(nation_id) {
-		const deferred = Q.defer();
-		NationModel.findOne({ id: nation_id }, function (err, nation) {
-			if (err)
-				return deferred.reject(err);
-			return deferred.resolve(nation);
-		});
-		return deferred.promise;
-	}
-	
-	static shortToId(nation_short_name) {
-		const deferred = Q.defer();
-		NationModel.findOne({ short_name: nation_short_name }, function (err, nation) {
-			if (err)
-				return deferred.reject(err);
-			return deferred.resolve(nation.id);
-		});
-		return deferred.promise;
-	}
-
 	static nameToId(nation_name) {
 		const deferred = Q.defer();
 		const regex = new RegExp('.*' + nation_name + '.*', 'i');
 		NationModel.findOne({ $or: [ { short_name: regex }, { name: regex } ] }, function (err, nation) {
 			if (err)
 				return deferred.reject(err);
-			return deferred.resolve(nation.id);
+			if (nation)
+				return deferred.resolve(nation.id);
+			return deferred.resolve(undefined);
 		});
 		return deferred.promise;
 	}
