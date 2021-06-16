@@ -9,6 +9,8 @@
         "invalid_action": "Invalid action, use add or remove",
         "fixed": "Channels setting fixed",
         "no_fix": "No channels to fix",
-        "no_results": "No results"
+        "no_results": "No results",
+        "max_page": "That page doesn't exist, max page for this search is {page}",
+        "results": "Showing {from}-{to} of {total} (Page {currentPage} of {totalPages})"
     }
 }
