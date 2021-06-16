@@ -4,7 +4,7 @@
   "description": "Unofficial Kards discord bot",
   "private": true,
   "author": "KlutzyBubbles",
-  "main": "master.js",
+  "main": "kards-bot.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/Kards-Stats/kards-discord-bot.git"
