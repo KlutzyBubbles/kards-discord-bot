@@ -6,6 +6,13 @@
 
 This bot is currently hosted on my private servers until i find a reasonably priced option, this means if i lose power, the bot goes down. Although the uptime of my servers for the past year has been ~98%.
 
+## Roadmap
+
+1. Add languages
+2. Add card searching through the `[[` command prefix
+3. Add configurable prefix
+4. Add stats command using kards-public-stats
+
 ## Self hosting
 
 Simply clone the repo, set the following environment variables
