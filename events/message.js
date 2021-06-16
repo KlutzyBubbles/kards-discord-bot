@@ -1,10 +1,11 @@
 require('cross-fetch/polyfill');
 const { ApolloClient, gql } = require('@apollo/client/core');
 const { InMemoryCache } = require('@apollo/client/cache');
-const { Permissions } = require('discord.js');
+const { Permissions, MessageAttachment } = require('discord.js');
+const { createCanvas, loadImage } = require('canvas')
 
 const log4js = require('log4js');
-const logger = log4js.getLogger('player-model');
+const logger = log4js.getLogger('events-message');
 logger.level = process.env.log_level || 'error';
 
 const { SettingsFunctions } = require('../model/settings');
@@ -97,7 +98,7 @@ query getCards(
 }
 `;
 
-function getCaseInsensative(name, list) {
+function getCaseInsensitive(name, list) {
     for (var i = 0; i < list.length; i++) {
         if (list[i].toLowerCase() == name.toLowerCase()) {
             return list[i];
@@ -222,7 +223,7 @@ async function onMessage(message) {
         var split = content.split(' ');
         var variables = {
             language: settings.language,
-            first: settings.page_size,
+            pageSize: settings.page_size,
             offset: 0
         };
         for (var i = 0; i < split.length; i++) {
@@ -232,15 +233,20 @@ async function onMessage(message) {
             } else {
                 var name = item[0];
                 if (name == 'nation') {
+                    logger.trace('found nation');
                     var nations = item[1].split(',');
                     var nations_query = [];
                     for (var j = 0; j < nations.length; j++) {
                         let nation_id;
                         try {
-                            nation_id = await NationFunctions.nameToId(nations[j]);
+                            if (nations[j].trim() != '') {
+                                nation_id = await NationFunctions.nameToId(nations[j].trim().replace('-', ' ').replace('_', ' '));
+                            }
                         } catch(e) {
                             logger.error(e);
                         }
+                        logger.debug(nations[j].trim().replace('-', ' ').replace('_', ' '));
+                        logger.debug(nation_id);
                         if (nation_id) {
                             nations_query.push(nation_id);
                         }
@@ -249,38 +255,55 @@ async function onMessage(message) {
                         variables.nationIds = nations_query;
                     }
                 } else if (name == 'page') {
+                    logger.trace('found page');
                     let page;
                     try {
-                        page = parseInt(item[1]);
+                        page = parseInt(item[1].trim());
                     } catch(e) {
                         logger.error(e);
                     }
+                    logger.debug(item[1].trim());
                     if (page) {
                         if (page < 1) {
                             page = 1;
                         }
-                        variables.offset = (page - 1) * variables.first;
+                        logger.debug(page);
+                        variables.offset = (page - 1) * settings.page_size;
+                        logger.trace((page - 1) * settings.page_size);
                     }
                 } else if (name == 'kredits') {
-                    let kredits;
-                    try {
-                        kredits = parseInt(item[1]);
-                    } catch(e) {
-                        logger.error(e);
-                    }
-                    if (kredits) {
-                        if (kredits < 1) {
-                            kredits = 1;
-                        } else if (kredits > 7) {
-                            kredits = 7;
+                    logger.trace('found kredits');
+                    var kredits_given = item[1].split(',');
+                    var kredits_query = [];
+                    for (var j = 0; j < kredits_given.length; j++) {
+                        let kredit;
+                        try {
+                            kredit = parseInt(kredits_given[j]);
+                        } catch(e) {
+                            logger.error(e);
                         }
-                        variables.kredits = kredits;
+                        logger.debug(kredits_given[j].trim());
+                        if (kredit) {
+                            if (kredit < 0) {
+                                kredit = 0;
+                            } else if (kredit > 7) {
+                                kredit = 7;
+                            }
+                            logger.debug(kredit);
+                            kredits_query.push(kredit);
+                        }
+                    }
+                    if (kredits_query.length > 0) {
+                        variables.kredits = kredits_query;
                     }
                 } else if (name == 'set') {
+                    logger.trace('found set');
                     var sets_given = item[1].split(',');
                     var sets_query = [];
                     for (var j = 0; j < sets_given.length; j++) {
-                        var set = getCaseInsensative(sets_given[j], sets);
+                        var set = getCaseInsensitive(sets_given[j].trim(), sets);
+                        logger.debug(sets_given[j].trim());
+                        logger.debug(set);
                         if (set) {
                             sets_query.push(set);
                         }
@@ -289,10 +312,13 @@ async function onMessage(message) {
                         variables.set = sets_query;
                     }
                 } else if (name == 'rarity') {
+                    logger.trace('found rarity');
                     var rarities_given = item[1].split(',');
                     var rarity_query = [];
                     for (var j = 0; j < rarities_given.length; j++) {
-                        var rarity = getCaseInsensative(rarities_given[j], sets);
+                        var rarity = getCaseInsensitive(rarities_given[j].trim(), rarities);
+                        logger.debug(rarities_given[j].trim());
+                        logger.debug(rarity);
                         if (rarity) {
                             rarity_query.push(rarity);
                         }
@@ -301,10 +327,13 @@ async function onMessage(message) {
                         variables.rarity = rarity_query;
                     }
                 } else if (name == 'type') {
+                    logger.trace('found type');
                     var types_given = item[1].split(',');
                     var type_query = [];
                     for (var j = 0; j < types_given.length; j++) {
-                        var type = getCaseInsensative(types_given[j], sets);
+                        var type = getCaseInsensitive(types_given[j].trim(), types);
+                        logger.debug(types_given[j].trim());
+                        logger.debug(type);
                         if (type) {
                             type_query.push(type);
                         }
@@ -313,6 +342,7 @@ async function onMessage(message) {
                         variables.type = type_query;
                     }
                 } else if (name == 'spawnable') {
+                    logger.trace('found spawnable');
                     var spawnable = item[1].toLowerCase();
                     var spawnable_query = false;
                     if (spawnable == 'true' || spawnable == 'yes' || spawnable == 'y') {
@@ -324,23 +354,84 @@ async function onMessage(message) {
                 }
             }
         }
+        logger.trace(variables);
         client.query({
             query: cardsQuery,
             variables: variables
         }).then((result) => {
             logger.trace(result);
+            logger.trace(result.data.cards.pageInfo);
             if (result.data.cards.pageInfo.count == 0) {
                 message.channel.send(getString(settings.language, 'no_results'));
             } else {
-                var files = [];
+                var promises = [];
                 for (var i = 0; i < result.data.cards.edges.length; i++) {
                     var card = result.data.cards.edges[i];
-                    files.push({
-                        attachment: 'https://kards.com' + card.node.image,
-                        name: card.node.json.title.en + '.png'
-                    })
+                    promises.push(loadImage('https://kards.com' + card.node.image));
                 }
-                message.channel.send({ content: JSON.stringify(variables), files: files });
+                Promise.all(promises).then((images) => {
+                    /*
+                    Original: 500:700
+                    Resized: 300:420
+                    */
+                    if (images.length == 0) {
+                        var pageSize = settings.page_size;
+                        var total = result.data.cards.pageInfo.count;
+                        var totalPages = total % pageSize == 0 ? total / pageSize : ((total - (total % pageSize)) / pageSize) + 1;
+                        var string = getString(settings.language, 'max_page').replace('{page}', totalPages);
+                        message.channel.send(string);
+                    } else {
+                        var results = images.length;
+                        var width = 1500;
+                        var height = 420 * (settings.page_size / 5);
+                        if (results != settings.page_size) {
+                            if (results >= 5) {
+                                logger.trace('width same');
+                                logger.debug(results);
+                                logger.debug(results % 5);
+                                logger.debug(5 - (results % 5));
+                                logger.debug((5 - (results % 5)) + results);
+                                logger.debug(((5 - (results % 5)) + results) / 5);
+                                height = 420 * ((((5 - (results % 5)) + results) / 5));
+                            } else {
+                                logger.trace('width goes down');
+                                height = 420;
+                                width = (results % 5) * 300;
+                            }
+                        }
+                        var canvas = createCanvas(width, height);
+                        var ctx = canvas.getContext('2d');
+                        for (var i = 0; i < images.length; i++) {
+                            var row = (((5 - (i % 5)) + i) / 5) - 1;
+                            logger.trace('row');
+                            logger.debug(row);
+                            var column = i % 5;
+                            logger.trace('column');
+                            logger.debug(column);
+                            logger.debug(images[i]);
+                            ctx.drawImage(images[i], column * 300, row * 420, 300, 420);
+                        }
+                        var total = result.data.cards.pageInfo.count;
+                        var current = images.length;
+                        var pageSize = settings.page_size;
+                        var offset = variables.offset;
+                        var from = offset + 1;
+                        var to = offset + current;
+                        var totalPages = total % pageSize == 0 ? total / pageSize : ((total - (total % pageSize)) / pageSize) + 1;
+                        var currentPage = offset == 0 ? 1 : (offset / pageSize) + 1;
+                        const attachment = new MessageAttachment(canvas.toBuffer(), `${Date.now().toString()}.png`);
+                        var string = getString(settings.language, 'results');
+                        string = string.replace('{from}', from);
+                        string = string.replace('{to}', to);
+                        string = string.replace('{total}', total);
+                        string = string.replace('{currentPage}', currentPage);
+                        string = string.replace('{totalPages}', totalPages);
+                        message.channel.send(string, attachment);
+                    }
+                }).catch((e) => {
+                    logger.error(e);
+                    message.channel.send(getString(settings.language, 'error'));
+                });
             }
         }).catch((e) => {
             logger.error(e);
@@ -361,7 +452,7 @@ async function onMessage(message) {
             variables: {
                 language: settings.language,
                 q: search,
-                first: 1,
+                pageSize: 1,
                 offset: 0,
                 showSpawnables: true
             }
