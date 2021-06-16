@@ -53,7 +53,34 @@ Examples:
 
 ### List Cards
 
-Work in Progress
+prefix `[[`
+
+Lists cards matching the supplied parameters, in the format `[[name=value name=value,value2`
+
+Spaces are used to seperate the parameters and therefor cannot exist in the value itself, cases where a space exists, can be replaced with a `-` or `_`.
+
+**Parameters**
+
+nation=germany,britain,france,italy,japan,united-states,united_states,usa,poland,soviet-union,soviet_union,soviet
+
+kredits=0,1,2,3,4,5,6,7
+
+rarity=limited,standard,special,elite
+
+page=`Number`
+
+set=base,allegiance
+
+type=infantry,artillery,tank,bomber,fighter,order,countermeasure
+
+spawnable=`true|yes|y` (Default false)
+
+**Notes**
+
+- All parameters are case insensative
+- Nation names can be partly filled as it is a search not a match
+- Kredit value 7 includes cards with a cost of 7 or more, this is just how the kards api works
+- Providing anything other than `true|yes|y` for spawnable will just result in false
 
 ### Admin commands
 
