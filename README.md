@@ -11,7 +11,8 @@ This bot is currently hosted on my private servers until i find a reasonably pri
 1. Add languages
 2. Add card searching through the `[[` command prefix
 3. Add configurable prefix
-4. Add stats command using kards-public-stats
+4. Add open to tag multiple cards using `[]`
+5. Add stats command using kards-public-stats
 
 ## Self hosting
 
