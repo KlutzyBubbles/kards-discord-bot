@@ -113,6 +113,9 @@ function getCaseInsensitive(name, list) {
 function removeDuplicates(list) {
     var newList = [];
     for (var i = 0; i < list.length; i++) {
+        if (newList.length >= 15) {
+            return newList;
+        }
         if (list[i] != '' && !newList.includes(list[i].toLowerCase())) {
             newList.push(list[i].toLowerCase());
         }
@@ -146,6 +149,9 @@ function getCard(search, language) {
 }
 
 function stitchImages(images, max) {
+    logger.trace('stitchImages');
+    logger.debug(images.length);
+    logger.debug(max);
     if (images.length == 0) {
         var canvas = createCanvas(0, 0);
         return new MessageAttachment(canvas.toBuffer(), `${Date.now().toString()}.png`);
@@ -153,15 +159,17 @@ function stitchImages(images, max) {
         var results = images.length;
         var width = 1500;
         var height = 420 * (max / 5);
-        if (results != max) {
+        if (results < max) {
             if (results >= 5) {
                 logger.trace('width same');
                 logger.debug(results);
                 logger.debug(results % 5);
                 logger.debug(5 - (results % 5));
                 logger.debug((5 - (results % 5)) + results);
-                logger.debug(((5 - (results % 5)) + results) / 5);
-                height = 420 * ((((5 - (results % 5)) + results) / 5));
+                logger.debug(((4 - (results % 5)) + results) / 5);
+                var rows = (results - (results % 5)) / 5;
+                rows = results % 5 == 0 ? rows : rows + 1;
+                height = 420 * rows;
             } else {
                 logger.trace('width goes down');
                 height = 420;
