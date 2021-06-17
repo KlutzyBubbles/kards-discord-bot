@@ -12,7 +12,10 @@ This bot is currently hosted on my private servers until i find a reasonably pri
 
 ## Known Issues
 
+These issues are known and unlikely to get solved either due to their complexity to implement or that they are not a real world scenario anyway.
+
 - You cannot search for a card by using `[[` at the start of your message. This does NOT apply if you have changed the prefix from the default `[`.
+- You can query a maximum of 15 cards at a time. The number of cards returned may be less if two or more queries return the same card.
 
 ## Self hosting
 
@@ -79,7 +82,7 @@ spawnable=`true|yes|y` (Default false)
 
 **Notes**
 
-- All parameters are case insensative
+- All parameters are case insensitive
 - Nation names can be partly filled as it is a search not a match
 - Kredit value 7 includes cards with a cost of 7 or more, this is just how the kards api works
 - Providing anything other than `true|yes|y` for spawnable will just result in false
