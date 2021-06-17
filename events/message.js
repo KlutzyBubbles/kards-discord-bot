@@ -3,6 +3,7 @@ const { ApolloClient, gql } = require('@apollo/client/core');
 const { InMemoryCache } = require('@apollo/client/cache');
 const { Permissions, MessageAttachment } = require('discord.js');
 const { createCanvas, loadImage } = require('canvas')
+const Q = require('q');
 
 const log4js = require('log4js');
 const logger = log4js.getLogger('events-message');
@@ -12,6 +13,8 @@ const { SettingsFunctions } = require('../model/settings');
 const { NationFunctions } = require('../model/nation');
 
 const getString = require('../language/getString');
+
+const regex = "(?<=\\{prefix})(.*?)(?=\\{suffix}|$)";
 
 const client = new ApolloClient({
   uri: 'https://api.kards.com/graphql',
@@ -107,17 +110,144 @@ function getCaseInsensitive(name, list) {
     return undefined;
 }
 
+function removeDuplicates(list) {
+    var newList = [];
+    for (var i = 0; i < list.length; i++) {
+        if (!newList.includes(list[i].toLowerCase())) {
+            newList.push(list[i].toLowerCase());
+        }
+    }
+    return newList;
+}
+
+function getCard(search, language) {
+    const deferred = Q.defer();
+    client.query({
+        query: cardsQuery,
+        variables: {
+            language: language,
+            q: search,
+            pageSize: 1,
+            offset: 0,
+            showSpawnables: true
+        }
+    }).then((result) => {
+        logger.trace(result);
+        if (result.data.cards.pageInfo.count == 0) {
+            deferred.resolve(undefined);
+        } else {
+            deferred.resolve('https://kards.com' + result.data.cards.edges[0].node.image);
+        }
+    }).catch((e) => {
+        logger.error(e);
+        message.channel.send(getString(settings.language, 'error'));
+    });
+    return deferred.promise;
+}
+
+function stitchImages(images, max) {
+    if (images.length == 0) {
+        var canvas = createCanvas(0, 0);
+        return new MessageAttachment(canvas.toBuffer(), `${Date.now().toString()}.png`);
+    } else {
+        var results = images.length;
+        var width = 1500;
+        var height = 420 * (max / 5);
+        if (results != max) {
+            if (results >= 5) {
+                logger.trace('width same');
+                logger.debug(results);
+                logger.debug(results % 5);
+                logger.debug(5 - (results % 5));
+                logger.debug((5 - (results % 5)) + results);
+                logger.debug(((5 - (results % 5)) + results) / 5);
+                height = 420 * ((((5 - (results % 5)) + results) / 5));
+            } else {
+                logger.trace('width goes down');
+                height = 420;
+                width = (results % 5) * 300;
+            }
+        }
+        var canvas = createCanvas(width, height);
+        var ctx = canvas.getContext('2d');
+        for (var i = 0; i < images.length; i++) {
+            var row = (((5 - (i % 5)) + i) / 5) - 1;
+            logger.trace('row');
+            logger.debug(row);
+            var column = i % 5;
+            logger.trace('column');
+            logger.debug(column);
+            logger.debug(images[i]);
+            ctx.drawImage(images[i], column * 300, row * 420, 300, 420);
+        }
+        return new MessageAttachment(canvas.toBuffer(), `${Date.now().toString()}.png`);
+        
+    }
+}
+
 async function onMessage(message) {
-    if (!message.content.startsWith('[')) return;
     if (message.author.bot) return;
     if (message.channel.type !== 'text' && message.channel.type !== 'dm') return;
 
-    var settings = { language: 'en', page_size: 5, channels: [] };
+    var settings = SettingsFunctions.getDefaultSettings();
     if (message.guild) {
         settings = await SettingsFunctions.getById(message.guild.id);
         logger.trace(message.guild.id);
     }
     logger.trace(settings);
+
+    if (!message.content.startsWith('[[')) {
+        logger.trace('Not [[');
+        var regexObj = new RegExp(regex.replace('{prefix}', settings.prefix).replace('{suffix}', settings.suffix), 'g');
+        var matches = message.content.match(regexObj);
+        logger.debug(regex.replace('{prefix}', settings.prefix).replace('{suffix}', settings.suffix));
+        logger.debug(matches);
+        if (matches != undefined && matches != null && matches.length != 0) {
+            if (settings.channels.length > 0) {
+                if (!settings.channels.includes(message.channel.id.toLowerCase())) return;
+            }
+            matches = removeDuplicates(matches);
+            var promises = [];
+            for (var i = 0; i < matches.length; i++) {
+                promises.push(getCard(matches[i], settings.language));
+            }
+            Promise.all(promises).then((cards) => {
+                var actualCards = [];
+                for (var i = 0; i < cards.length; i++) {
+                    if (cards[i] != undefined && !actualCards.includes(cards[i])) {
+                        actualCards.push(cards[i]);
+                    }
+                }
+                if (actualCards.length == 0) {
+                    message.channel.send(getString(settings.language, 'no_results'));
+                } else {
+                    var promises = [];
+                    for (var i = 0; i < actualCards.length; i++) {
+                        promises.push(loadImage(actualCards[i]));
+                    }
+                    Promise.all(promises).then((images) => {
+                        /*
+                        Original: 500:700
+                        Resized: 300:420
+                        */
+                        if (images.length == 0) {
+                            message.channel.send(getString(settings.language, 'no_results'));
+                        } else {
+                            message.channel.send('', stitchImages(images, 15));
+                        }
+                    }).catch((e) => {
+                        logger.error(e);
+                        message.channel.send(getString(settings.language, 'error'));
+                    });
+                }
+            }).catch((e) => {
+                logger.error(e);
+                message.channel.send(getString(settings.language, 'error'));
+            });
+        }
+    }
+
+    if (!message.content.startsWith('[[')) return;
 
     if (message.content.startsWith('[[[')) {
         // Settings
@@ -175,6 +305,35 @@ async function onMessage(message) {
             SettingsFunctions.setSetting(message.guild.id, 'language', languageOption).then(() => {
                 return message.channel.send(getString(settings.language, 'setting_changed'));
             }).catch((e) => {
+                logger.error(e);
+                return message.channel.send(getString(settings.language, 'error'));
+            });
+        } else if (setting == 'prefix') {
+            logger.trace('prefix');
+            var prefix = split[1].toLowerCase();
+            if (prefix == '') {
+                return message.channel.send(getString(settings.language, 'arguments_incorrect'));
+            } else if (prefix.length > 10) {
+                return message.channel.send(getString(settings.language, 'prefix_suffix_length'));
+            }
+            SettingsFunctions.setSetting(message.guild.id, 'prefix', prefix).then(() => {
+                return message.channel.send(getString(settings.language, 'setting_changed'));
+            }).catch((e) => {
+                logger.error(e);
+                return message.channel.send(getString(settings.language, 'error'));
+            });
+        } else if (setting == 'suffix') {
+            logger.trace('suffix');
+            var suffix = split[1].toLowerCase();
+            if (suffix == '') {
+                return message.channel.send(getString(settings.language, 'arguments_incorrect'));
+            } else if (suffix.length > 10) {
+                return message.channel.send(getString(settings.language, 'prefix_suffix_length'));
+            }
+            SettingsFunctions.setSetting(message.guild.id, 'suffix', suffix).then(() => {
+                return message.channel.send(getString(settings.language, 'setting_changed'));
+            }).catch((e) => {
+                logger.error(e);
                 return message.channel.send(getString(settings.language, 'error'));
             });
         } else if (setting == 'page_size') {
@@ -191,6 +350,7 @@ async function onMessage(message) {
             SettingsFunctions.setSetting(message.guild.id, 'page_size', pageSize).then(() => {
                 return message.channel.send(getString(settings.language, 'setting_changed'));
             }).catch((e) => {
+                logger.error(e);
                 return message.channel.send(getString(settings.language, 'error'));
             });
         } else if (setting == 'channels') {
@@ -199,18 +359,23 @@ async function onMessage(message) {
                 return message.channel.send(getString(settings.language, 'arguments_incorrect'));
             }
             var action = split[1].toLowerCase();
-            if (action == 'add') {
-                await message.mentions.channels.each(async (channel) => {
-                    await SettingsFunctions.addChannel(message.guild.id, channel.id);
-                });
-                return message.channel.send(getString(settings.language, 'setting_changed'));
-            } else if (action == 'remove') {
-                await message.mentions.channels.each(async (channel) => {
-                    await SettingsFunctions.removeChannel(message.guild.id, channel.id);
-                });
-                return message.channel.send(getString(settings.language, 'setting_changed'));
-            } else {
-                return message.channel.send(getString(settings.language, 'invalid_action'));
+            try {
+                if (action == 'add') {
+                    await message.mentions.channels.each(async (channel) => {
+                        await SettingsFunctions.addChannel(message.guild.id, channel.id);
+                    });
+                    return message.channel.send(getString(settings.language, 'setting_changed'));
+                } else if (action == 'remove') {
+                    await message.mentions.channels.each(async (channel) => {
+                        await SettingsFunctions.removeChannel(message.guild.id, channel.id);
+                    });
+                    return message.channel.send(getString(settings.language, 'setting_changed'));
+                } else {
+                    return message.channel.send(getString(settings.language, 'invalid_action'));
+                }
+            } catch(e) {
+                logger.error(e);
+                return message.channel.send(getString(settings.language, 'error'));
             }
         }
     } else if (message.content.startsWith('[[')) {
@@ -381,36 +546,6 @@ async function onMessage(message) {
                         var string = getString(settings.language, 'max_page').replace('{page}', totalPages);
                         message.channel.send(string);
                     } else {
-                        var results = images.length;
-                        var width = 1500;
-                        var height = 420 * (settings.page_size / 5);
-                        if (results != settings.page_size) {
-                            if (results >= 5) {
-                                logger.trace('width same');
-                                logger.debug(results);
-                                logger.debug(results % 5);
-                                logger.debug(5 - (results % 5));
-                                logger.debug((5 - (results % 5)) + results);
-                                logger.debug(((5 - (results % 5)) + results) / 5);
-                                height = 420 * ((((5 - (results % 5)) + results) / 5));
-                            } else {
-                                logger.trace('width goes down');
-                                height = 420;
-                                width = (results % 5) * 300;
-                            }
-                        }
-                        var canvas = createCanvas(width, height);
-                        var ctx = canvas.getContext('2d');
-                        for (var i = 0; i < images.length; i++) {
-                            var row = (((5 - (i % 5)) + i) / 5) - 1;
-                            logger.trace('row');
-                            logger.debug(row);
-                            var column = i % 5;
-                            logger.trace('column');
-                            logger.debug(column);
-                            logger.debug(images[i]);
-                            ctx.drawImage(images[i], column * 300, row * 420, 300, 420);
-                        }
                         var total = result.data.cards.pageInfo.count;
                         var current = images.length;
                         var pageSize = settings.page_size;
@@ -419,52 +554,18 @@ async function onMessage(message) {
                         var to = offset + current;
                         var totalPages = total % pageSize == 0 ? total / pageSize : ((total - (total % pageSize)) / pageSize) + 1;
                         var currentPage = offset == 0 ? 1 : (offset / pageSize) + 1;
-                        const attachment = new MessageAttachment(canvas.toBuffer(), `${Date.now().toString()}.png`);
                         var string = getString(settings.language, 'results');
                         string = string.replace('{from}', from);
                         string = string.replace('{to}', to);
                         string = string.replace('{total}', total);
                         string = string.replace('{currentPage}', currentPage);
                         string = string.replace('{totalPages}', totalPages);
-                        message.channel.send(string, attachment);
+                        message.channel.send(string, stitchImages(images, settings.page_size));
                     }
                 }).catch((e) => {
                     logger.error(e);
                     message.channel.send(getString(settings.language, 'error'));
                 });
-            }
-        }).catch((e) => {
-            logger.error(e);
-            message.channel.send(getString(settings.language, 'error'));
-        });
-    } else {
-        // Card search by name
-        if (settings.channels.length > 0) {
-            if (!settings.channels.includes(message.channel.id.toLowerCase())) return;
-        }
-        var search = message.content.split('[')[1];
-        if(search.charAt(search.length - 1) == "]") {
-            search = search.slice(0, -1);
-        }
-        if (search == '') return;
-        client.query({
-            query: cardsQuery,
-            variables: {
-                language: settings.language,
-                q: search,
-                pageSize: 1,
-                offset: 0,
-                showSpawnables: true
-            }
-        }).then((result) => {
-            logger.trace(result);
-            if (result.data.cards.pageInfo.count == 0) {
-                message.channel.send(getString(settings.language, 'no_results'));
-            } else {
-                message.channel.send({ files: [{
-                    attachment: 'https://kards.com' + result.data.cards.edges[0].node.image,
-                    name: result.data.cards.edges[0].node.json.title.en + '.png'
-                }] });
             }
         }).catch((e) => {
             logger.error(e);
