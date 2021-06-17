@@ -11,7 +11,8 @@
         "no_fix": "No channels to fix",
         "no_results": "No results",
         "max_page": "That page doesn't exist, max page for this search is {page}",
-        "results": "Showing {from}-{to} of {total} (Page {currentPage} of {totalPages})"
+        "results": "Showing {from}-{to} of {total} (Page {currentPage} of {totalPages})",
+        "prefix_suffix_length": "You can not set a prefix or suffix longer than 5 characters"
     },
     "de": {
         "error": "Ein Fehler ist aufgetreten, bitte versuche es später noch einmal",
@@ -25,7 +26,8 @@
         "no_fix": "Keine Kanäle zu reparieren",
         "no_results": "Keine Ergebnisse",
         "max_page": "Diese Seite existiert nicht, die maximale Seite für diese Suche ist {page}",
-        "results": "{from}-{to} von {total} wird angezeigt (Seite {currentPage} von {totalPages})"
+        "results": "{from}-{to} von {total} wird angezeigt (Seite {currentPage} von {totalPages})",
+        "prefix_suffix_length": "Sie können kein Präfix oder Suffix mit mehr als 5 Zeichen festlegen"
     },
     "fr": {
         "error": "Quelque chose c'est mal passé. Merci d'essayer plus tard",
@@ -39,7 +41,8 @@
         "no_fix": "Aucune chaîne à corriger",
         "no_results": "Aucun résultat",
         "max_page": "Cette page n'existe pas, la page max pour cette recherche est {page}",
-        "results": "Affichage {from}-{to} de {total} (Page {currentPage} de {totalPages})"
+        "results": "Affichage {from}-{to} de {total} (Page {currentPage} de {totalPages})",
+        "prefix_suffix_length": "Vous ne pouvez pas définir un préfixe ou un suffixe de plus de 5 caractères"
     },
     "pl": {
         "error": "Coś poszło nie tak. Proszę spróbować później",
@@ -53,7 +56,8 @@
         "no_fix": "Brak kanałów do naprawienia",
         "no_results": "Brak wyników",
         "max_page": "Ta strona nie istnieje, maksymalna liczba stron dla tego wyszukiwania to {page}",
-        "results": "Wyświetlanie {from}-{to} z {total} (strona {currentPage} z {totalPages})"
+        "results": "Wyświetlanie {from}-{to} z {total} (strona {currentPage} z {totalPages})",
+        "prefix_suffix_length": "Nie możesz ustawić prefiksu lub sufiksu dłuższego niż 5 znaków"
     },
     "pt": {
         "error": "algo deu errado por favor tente novamente mais tarde",
@@ -67,7 +71,8 @@
         "no_fix": "Nenhum canal para corrigir",
         "no_results": "Sem resultados",
         "max_page": "Essa página não existe, a página máxima para esta pesquisa é {page}",
-        "results": "Exibindo {from} - {to} de {total} (Página {currentPage} de {totalPages})"
+        "results": "Exibindo {from} - {to} de {total} (Página {currentPage} de {totalPages})",
+        "prefix_suffix_length": "Você não pode definir um prefixo ou sufixo com mais de 5 caracteres"
     },
     "ru": {
         "error": "Что-то пошло не так. Пожалуйста, повторите попытку позже",
@@ -81,7 +86,8 @@
         "no_fix": "Нет каналов для исправления",
         "no_results": "Нет результатов",
         "max_page": "Эта страница не существует, максимальная страница для этого поиска: {page}",
-        "results": "Показано {from} - {to} из {total} (страница {currentPage} из {totalPages})"
+        "results": "Показано {from} - {to} из {total} (страница {currentPage} из {totalPages})",
+        "prefix_suffix_length": "Вы не можете установить префикс или суффикс длиннее 5 символов."
     },
     "zh": {
         "error": "发生错误。请稍后再试",
@@ -95,6 +101,7 @@
         "no_fix": "没有渠道修复",
         "no_results": "没结果",
         "max_page": "该页面不存在，此搜索的最大页面是 {page}",
-        "results": "显示 {from}-{to} 个，共 {total}（第 {currentPage} 页，共 {totalPages}）"
+        "results": "显示 {from}-{to} 个，共 {total}（第 {currentPage} 页，共 {totalPages}）",
+        "prefix_suffix_length": "您不能设置超过 5 个字符的前缀或后缀"
     }
 }

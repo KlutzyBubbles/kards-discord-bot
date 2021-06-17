@@ -8,9 +8,14 @@ This bot is currently hosted on my private servers until i find a reasonably pri
 
 ## Roadmap
 
-1. Add configurable prefix
-2. Add open to tag multiple cards using `[]`
-3. Add stats command using kards-public-stats
+1. Add stats command using kards-public-stats
+
+## Known Issues
+
+These issues are known and unlikely to get solved either due to their complexity to implement or that they are not a real world scenario anyway.
+
+- You cannot search for a card by using `[[` at the start of your message. This does NOT apply if you have changed the prefix from the default `[`.
+- You can query a maximum of 15 cards at a time. The number of cards returned may be less if two or more queries return the same card.
 
 ## Self hosting
 
@@ -39,14 +44,16 @@ Then simply run `npm start` for production.
 
 ### Search Card
 
-prefix `[`
+For the examples it is assumed you are replacing the default prefix and suffix `[]` with your set one.
 
-Simlpy type the prefix followed by the text you wish to search, this will also trim trailing ]
+Simlpy type the prefix followed by the text you wish to search, if you wish to type after the search, use the suffix.
 
 Examples:
 ```
 [eva
 [Evasive Action]
+[eva] [bloody] look two
+you can even type before you search for [eva
 ```
 
 ### List Cards
@@ -75,7 +82,7 @@ spawnable=`true|yes|y` (Default false)
 
 **Notes**
 
-- All parameters are case insensative
+- All parameters are case insensitive
 - Nation names can be partly filled as it is a search not a match
 - Kredit value 7 includes cards with a cost of 7 or more, this is just how the kards api works
 - Providing anything other than `true|yes|y` for spawnable will just result in false
@@ -90,6 +97,18 @@ The following commands can only be run by users with the administrator permissio
 
 Lists all settings currently set for the server
 
+**[[[prefix (prefix)**
+
+Changes the prefix to the one specified, max length of 5
+
+**[[[suffix (prefix)**
+
+Changes the suffix to the one specified, max length of 5
+
+**[[[search (true|yes|y|false|no|n)**
+
+Enables or disables the use of the search function `[[`
+
 **[[[language (language)**
 
 Sets the preferred language output, options are en, de, fr, pl, pt, ru, zh
@@ -100,7 +119,7 @@ Sets the preferred page size for List Cards, options are 5, 10, 15
 
 **[[[channels (add|remove) (channels)**
 
-Adds or removes channels in which the list and search commands can be used. If no channels are added thn it is usable in all channels.
+Adds or removes channels in which the list and search commands can be used. If no channels are added then it is usable in all channels.
 
 **[[[fix**
 

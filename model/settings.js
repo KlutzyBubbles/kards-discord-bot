@@ -10,48 +10,35 @@ const SettingsSchema = new Schema({
 	'server_id': String,
 	'language': String,
 	'page_size': Number,
-	'channels': [String]
+	'channels': [String],
+    'search': Boolean,
+    'prefix': String,
+    'suffix': String
 });
+
+const defaultSettings = {
+    language: 'en',
+    page_size: 10,
+    channels: [],
+    search: false,
+    prefix: '[',
+    suffix: ']'
+};
 
 const SettingsModel = mongoose.model('Settings', SettingsSchema);
 
-/*
-{
-    "id": "en",
-    "code": "en-us",
-    "name": "English"
-},
-{
-    "id": "de",
-    "code": "de-de",
-    "name": "Deutsch"
-},
-{
-    "id": "fr",
-    "code": "fr-fr",
-    "name": "Français"
-},
-{
-    "id": "pl",
-    "code": "pl",
-    "name": "Polski"
-},
-{
-    "id": "pt",
-    "code": "pt-br",
-    "name": "Português"
-},
-{
-    "id": "ru",
-    "code": "ru",
-    "name": "Pусский"
-},
-{
-    "id": "zh",
-    "code": "zh-cn",
-    "name": "中文"
+function addDefaults(document) {
+    logger.trace('addDefaults');
+    logger.debug(document);
+    var object = document.toObject();
+    for (var key in defaultSettings) {
+        if (!Object.hasOwnProperty.call(object, key)) {
+            logger.trace(`no property ${key}`);
+            document[key] = defaultSettings[key];
+        }
+    }
+    return document;
 }
-*/
 
 class SettingsFunctions {
 
@@ -61,7 +48,7 @@ class SettingsFunctions {
 			if (err) {
 				deferred.reject(err);
 			} else {
-				deferred.resolve(settings);
+				deferred.resolve(addDefaults(settings));
 			}
 		});
 		return deferred.promise;
@@ -73,9 +60,7 @@ class SettingsFunctions {
             if (!settings) {
                 (new SettingsModel({
                     server_id: id,
-                    language: 'en',
-                    page_size: 10,
-                    channels: []
+                    ...defaultSettings
                 })).save().then((settings) => {
                     deferred.resolve(settings);
                 }).catch((e) => {
@@ -95,9 +80,7 @@ class SettingsFunctions {
             if (!settings) {
                 var settings = {
                     server_id: id,
-                    language: 'en',
-                    page_size: 10,
-                    channels: []
+                    ...defaultSettings
                 };
                 settings[name] = value;
                 (new SettingsModel(settings)).save().then((settings) => {
@@ -127,12 +110,11 @@ class SettingsFunctions {
             if (!settings) {
                 var settings = {
                     server_id: id,
-                    language: 'en',
-                    page_size: 10,
-                    channels: [
-                        channel.toLowerCase()
-                    ]
+                    ...defaultSettings
                 };
+                settings.channels = [
+                    channel.toLowerCase()
+                ]
                 (new SettingsModel(settings)).save().then((settings) => {
                     deferred.resolve(settings);
                 }).catch((e) => {
@@ -164,9 +146,7 @@ class SettingsFunctions {
             if (!settings) {
                 var settings = {
                     server_id: id,
-                    language: 'en',
-                    page_size: 10,
-                    channels: []
+                    ...defaultSettings
                 };
                 (new SettingsModel(settings)).save().then((settings) => {
                     deferred.resolve(settings);
@@ -194,6 +174,12 @@ class SettingsFunctions {
             deferred.reject(e);
         });
 		return deferred.promise;
+    }
+
+    static getDefaultSettings() {
+        return {
+            ...defaultSettings
+        };
     }
 
 }
