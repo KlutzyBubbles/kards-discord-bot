@@ -113,7 +113,7 @@ function getCaseInsensitive(name, list) {
 function removeDuplicates(list) {
     var newList = [];
     for (var i = 0; i < list.length; i++) {
-        if (!newList.includes(list[i].toLowerCase())) {
+        if (list[i] != '' && !newList.includes(list[i].toLowerCase())) {
             newList.push(list[i].toLowerCase());
         }
     }
@@ -264,7 +264,12 @@ async function onMessage(message) {
                     fields: [
                         {
                             name: 'Settings:',
-                            value: `Language: ${settings.language}\nPage Size: ${settings.page_size}\nUsable Channels: ${settings.channels.length == 0 ? 'All' : settings.channels.join(', ')}`,
+                            value: `Language: ${settings.language}
+                                    Page Size: ${settings.page_size}
+                                    Prefix: ${settings.prefix}
+                                    Suffix: ${settings.suffix}
+                                    Search Enabled: ${settings.search}
+                                    Usable Channels: ${settings.channels.length == 0 ? 'All' : settings.channels.join(', ')}`,
                             inline: true
                         }
                     ]
@@ -313,7 +318,7 @@ async function onMessage(message) {
             var prefix = split[1].toLowerCase();
             if (prefix == '') {
                 return message.channel.send(getString(settings.language, 'arguments_incorrect'));
-            } else if (prefix.length > 10) {
+            } else if (prefix.length > 5) {
                 return message.channel.send(getString(settings.language, 'prefix_suffix_length'));
             }
             SettingsFunctions.setSetting(message.guild.id, 'prefix', prefix).then(() => {
@@ -327,10 +332,26 @@ async function onMessage(message) {
             var suffix = split[1].toLowerCase();
             if (suffix == '') {
                 return message.channel.send(getString(settings.language, 'arguments_incorrect'));
-            } else if (suffix.length > 10) {
+            } else if (suffix.length > 5) {
                 return message.channel.send(getString(settings.language, 'prefix_suffix_length'));
             }
             SettingsFunctions.setSetting(message.guild.id, 'suffix', suffix).then(() => {
+                return message.channel.send(getString(settings.language, 'setting_changed'));
+            }).catch((e) => {
+                logger.error(e);
+                return message.channel.send(getString(settings.language, 'error'));
+            });
+        } else if (setting == 'search') {
+            logger.trace('search');
+            var search = split[1].toLowerCase();
+            var search_enabled = false;
+            if (search == 'true' || search == 'yes' || search == 'y') {
+                search_enabled = true;
+            }
+            if (search == '') {
+                return message.channel.send(getString(settings.language, 'arguments_incorrect'));
+            }
+            SettingsFunctions.setSetting(message.guild.id, 'search', search_enabled).then(() => {
                 return message.channel.send(getString(settings.language, 'setting_changed'));
             }).catch((e) => {
                 logger.error(e);
@@ -380,7 +401,7 @@ async function onMessage(message) {
         }
     } else if (message.content.startsWith('[[')) {
         // Card Search List
-        if (message.content == '[[');
+        if (!settings.search) return;
         if (settings.channels.length > 0) {
             if (!settings.channels.includes(message.channel.id.toLowerCase())) return;
         }
