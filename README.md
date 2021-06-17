@@ -12,6 +12,10 @@ This bot is currently hosted on my private servers until i find a reasonably pri
 2. Add open to tag multiple cards using `[]`
 3. Add stats command using kards-public-stats
 
+## Known Issues
+
+- You cannot search for a card by using `[[` at the start of your message. This does NOT apply if you have changed the prefix from the default `[`.
+
 ## Self hosting
 
 Simply clone the repo, set the following environment variables
@@ -39,14 +43,16 @@ Then simply run `npm start` for production.
 
 ### Search Card
 
-prefix `[`
+For the examples it is assumed you are replacing the default prefix and suffix `[]` with your set one.
 
-Simlpy type the prefix followed by the text you wish to search, this will also trim trailing ]
+Simlpy type the prefix followed by the text you wish to search, if you wish to type after the search, use the suffix.
 
 Examples:
 ```
 [eva
 [Evasive Action]
+[eva] [bloody] look two
+you can even type before you search for [eva
 ```
 
 ### List Cards
@@ -90,6 +96,18 @@ The following commands can only be run by users with the administrator permissio
 
 Lists all settings currently set for the server
 
+**[[[prefix (prefix)**
+
+Changes the prefix to the one specified, max length of 5
+
+**[[[suffix (prefix)**
+
+Changes the suffix to the one specified, max length of 5
+
+**[[[search (true|yes|y|false|no|n)**
+
+Enables or disables the use of the search function `[[`
+
 **[[[language (language)**
 
 Sets the preferred language output, options are en, de, fr, pl, pt, ru, zh
@@ -100,7 +118,7 @@ Sets the preferred page size for List Cards, options are 5, 10, 15
 
 **[[[channels (add|remove) (channels)**
 
-Adds or removes channels in which the list and search commands can be used. If no channels are added thn it is usable in all channels.
+Adds or removes channels in which the list and search commands can be used. If no channels are added then it is usable in all channels.
 
 **[[[fix**
 
