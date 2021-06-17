@@ -8,9 +8,7 @@ This bot is currently hosted on my private servers until i find a reasonably pri
 
 ## Roadmap
 
-1. Add configurable prefix
-2. Add open to tag multiple cards using `[]`
-3. Add stats command using kards-public-stats
+1. Add stats command using kards-public-stats
 
 ## Known Issues
 
