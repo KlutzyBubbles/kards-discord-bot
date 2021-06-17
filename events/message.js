@@ -91,7 +91,7 @@ query getCards(
         edges {
             node {
                 json
-                image: image(language: "en")
+                image: image(language: $language)
             }
         }
     }
