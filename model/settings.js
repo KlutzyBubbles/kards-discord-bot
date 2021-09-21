@@ -30,7 +30,7 @@ const SettingsModel = mongoose.model('Settings', SettingsSchema);
 function addDefaults(document) {
     logger.trace('addDefaults');
     logger.debug(document);
-    var object = document.toObject();
+    var object = document == undefined ? {} : document.toObject();
     for (var key in defaultSettings) {
         if (!Object.hasOwnProperty.call(object, key)) {
             logger.trace(`no property ${key}`);

@@ -139,6 +139,7 @@ function getCard(search, language) {
         if (result.data.cards.pageInfo.count == 0) {
             deferred.resolve(undefined);
         } else {
+            logger.info(result.data.cards.edges[0].node.json.id);
             deferred.resolve('https://kards.com' + result.data.cards.edges[0].node.image);
         }
     }).catch((e) => {
